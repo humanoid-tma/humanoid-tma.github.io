@@ -1,0 +1,8 @@
+.DS_Store
+.idea
+__pycache__/
+
+# Paper drafts under review: this repo is published to GitHub Pages, so
+# anything committed here is served publicly. Remove this rule once the
+# paper PDF is meant to be public.
+*.pdf

@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en" class="no-js">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TMA: Sim-to-Real Forceful Humanoid Manipulation via Tactile-Driven Motor Adaptation</title>
+  <meta name="description" content="TMA: Sim-to-Real Forceful Humanoid Manipulation via Tactile-Driven Motor Adaptation. Zero-shot sim-to-real round-doorknob opening on a Unitree G1 humanoid with multi-fingered tactile hands.">
+  <meta name="keywords" content="TMA, humanoid manipulation, tactile sensing, motor adaptation, sim-to-real, dexterous hands, doorknob opening">
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="TMA: Sim-to-Real Forceful Humanoid Manipulation via Tactile-Driven Motor Adaptation">
+  <meta property="og:description" content="Trained entirely in simulation, TMA adapts a humanoid's manipulation online from tactile interaction history and opens real round doorknobs zero-shot.">
+  <meta property="og:url" content="https://humanoid-tma.github.io/">
+  <meta property="og:image" content="https://humanoid-tma.github.io/static/figures/social_preview.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <script>document.documentElement.classList.replace("no-js", "js");</script>
+  <link rel="icon" type="image/svg+xml" href="static/favicon.svg?v=2">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Noto+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="preload" as="image" href="static/media/hero_poster.jpg" media="(min-aspect-ratio: 4/5)">
+  <link rel="preload" as="image" href="static/media/hero_portrait_poster.jpg" media="(max-aspect-ratio: 4/5)">
+  <link rel="stylesheet" href="static/css/style.css?v=33">
+  <script defer src="static/js/main.js?v=8"></script>
+</head>
+<body>
+
+<!-- Icon sprite, referenced below with <use href="#…">. -->
+<svg class="sprite" aria-hidden="true" focusable="false">
+  <symbol id="i-check" viewBox="0 0 16 16"><path d="M3.5 8.4 6.4 11.3 12.5 5.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-cross" viewBox="0 0 16 16"><path d="M4.6 4.6 11.4 11.4M11.4 4.6 4.6 11.4" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+  <symbol id="i-sound" viewBox="0 0 24 24"><path fill="currentColor" d="M3 9.5h4l5-4.5v14l-5-4.5H3zM15.5 8.2a5 5 0 0 1 0 7.6l-1.1-1.1a3.4 3.4 0 0 0 0-5.4zm2.6-2.6a8.6 8.6 0 0 1 0 12.8l-1.1-1.1a7 7 0 0 0 0-10.6z"/></symbol>
+</svg>
+
+<a class="skip-link" href="#overview">Skip to content</a>
+
+<!-- Section nav: a thin line on the left, shown once the cover is scrolled past (wide screens only). -->
+<nav class="sidenav" aria-label="Sections">
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#experiments">Real-World Experiments</a></li>
+    <li><a href="#baselines">Baselines</a></li>
+    <li><a href="#abstract">Abstract</a></li>
+    <li><a href="#video">Supplementary Video</a></li>
+    <li><a href="#bibtex">BibTeX</a></li>
+  </ul>
+</nav>
+
+<!-- ================================================================== -->
+<!-- Hero: full-screen background video with the title overlaid.         -->
+<!-- ================================================================== -->
+<header class="hero" id="top">
+  <!-- Montage: doorknob #2 close-up, then one rollout per doorknob (1x4 slices; 2x2 on phones),
+       then robustness under external disturbance. Rebuilt by tools/make_hero.sh.
+       main.js picks the landscape or portrait cut to fit the screen. -->
+  <video class="hero-video" muted loop playsinline preload="auto" aria-hidden="true"
+         data-src-landscape="static/media/hero.mp4?v=5"
+         data-poster-landscape="static/media/hero_poster.jpg?v=5"
+         data-src-portrait="static/media/hero_portrait.mp4?v=5"
+         data-poster-portrait="static/media/hero_portrait_poster.jpg?v=5"></video>
+  <div class="hero-overlay"></div>
+
+  <div class="hero-main">
+    <h1 class="hero-title">TMA</h1>
+    <p class="hero-subtitle">
+      Sim-to-Real Forceful Humanoid Manipulation<br>
+      <span class="nowrap">via <span class="ini">T</span>actile-Driven <span class="ini">M</span>otor <span class="ini">A</span>daptation</span>
+    </p>
+
+    <p class="authors">
+      <span class="au"><a href="https://www.chen-yiting.com/" target="_blank" rel="noopener">Yiting Chen</a><sup>&dagger;,2</sup></span>
+      <span class="au"><a href="https://colinyu1.github.io/" target="_blank" rel="noopener">Kelin Yu</a><sup>1,3</sup></span>
+      <span class="au"><a href="https://www.linkedin.com/in/sarthak-kaingade-a9152527" target="_blank" rel="noopener">Sarthak Kaingade</a><sup>1</sup></span>
+      <span class="au"><a href="https://www.linkedin.com/in/bryantrinh/" target="_blank" rel="noopener">Bryan Trinh</a><sup>1</sup></span>
+      <br class="br-lg">
+      <span class="au"><a href="https://profiles.rice.edu/faculty/kaiyu-hang" target="_blank" rel="noopener">Kaiyu Hang</a><sup>2</sup></span>
+      <span class="au"><a href="https://robertomartinmartin.com/" target="_blank" rel="noopener">Roberto Mart&iacute;n-Mart&iacute;n</a><sup>1,4</sup></span>
+      <span class="au"><a href="https://nima-fazeli.github.io/" target="_blank" rel="noopener">Nima Fazeli</a><sup>1,5</sup></span>
+      <span class="au"><a href="https://scholar.google.com/citations?user=BIiR3qgAAAAJ&amp;hl=en" target="_blank" rel="noopener">X. Alice Wu</a><sup>1</sup></span>
+    </p>
+    <p class="affiliations">
+      <span><sup>1</sup>Amazon</span>
+      <span><sup>2</sup>Rice University</span>
+      <span><sup>3</sup>University of Maryland</span>
+      <span><sup>4</sup>The University of Texas at Austin</span>
+      <span><sup>5</sup>University of Michigan</span>
+    </p>
+    <p class="footnote"><sup>&dagger;</sup>Work done during an internship at Amazon Industrial Robotics Group (IRG)</p>
+
+    <p class="hero-links">
+      <a class="hero-btn" href="https://arxiv.org/pdf/2611.18976" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+          <path d="M14 2v6h6M8 13h8M8 17h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Paper <span class="hero-btn-sub">arXiv</span></span>
+      </a>
+    </p>
+
+  </div>
+
+  <div class="hero-caption">
+    <span class="live-dot" aria-hidden="true"></span>
+    <span>Fully autonomous &middot; 1&times; speed<br>Zero-shot Sim-to-Real Transfer<br>Loco-manipulation &middot; Egocentric Perception<br>One Tactile Policy across Four Commercial Doorknobs</span>
+  </div>
+
+</header>
+
+<main>
+
+  <!-- ================================================================ -->
+  <!-- 1. Overview                                                         -->
+  <!-- ================================================================ -->
+  <section class="section" id="overview">
+    <div class="wrap">
+      <h2 class="section-title">Overview</h2>
+      <p class="section-sub">
+        TMA adapts a humanoid&rsquo;s multi-finger manipulation online from tactile interaction history.
+        Trained entirely in simulation, it opens real round doorknobs zero-shot.
+      </p>
+    </div>
+    <div class="wrap wide">
+      <div class="highlights">
+        <article class="hl">
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="11" y="3" width="10" height="7" rx="2"/><rect x="10" y="12" width="12" height="10" rx="2"/>
+            <path d="M10 14l-5 5M22 14l4 3 3-2M13 22v7M19 22v7"/>
+          </svg>
+          <h3>Humanoid <span class="nowrap">loco-manipulation</span> system</h3>
+          <p>Dexterous manipulation with whole-body balance.</p>
+        </article>
+        <article class="hl">
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 29V12a3 3 0 0 1 6 0v8"/><path d="M18 17a2.5 2.5 0 0 1 5 0v4c0 5-3 8-7 8"/>
+            <path d="M8 9a8 8 0 0 1 14 0M5 6a12 12 0 0 1 20 0"/>
+          </svg>
+          <h3>Tactile dexterous manipulation policy</h3>
+          <p>Adapts online from <span class="nowrap">multi-fingered</span> fingertip tactile interactions.</p>
+        </article>
+        <article class="hl">
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 9l6-4 6 4v8l-6 4-6-4z"/><path d="M3 9l6 4 6-4M9 13v8"/>
+            <path d="M17 16h8M22 12.5l3.5 3.5-3.5 3.5"/><circle cx="27" cy="25" r="2.5"/><path d="M27 16v6.5"/>
+          </svg>
+          <h3>Zero-shot sim-to-real transfer</h3>
+          <p>Tactile manipulation policy trained only in simulation, with no fine-tuning.</p>
+        </article>
+        <article class="hl">
+          <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="9" cy="9" r="5"/><circle cx="23" cy="9" r="5"/><circle cx="9" cy="23" r="5"/><circle cx="23" cy="23" r="5"/>
+          </svg>
+          <h3>Generalizes to real, commercial doorknobs</h3>
+          <p>Zero-shot across four doorknobs with diverse spring mechanisms and contact geometry.</p>
+        </article>
+      </div>
+      <h3 class="subsection-title">Touch reveals the forceful interaction</h3>
+      <figure class="fig fig-lead">
+        <img class="zoomable" src="static/figures/teaser.webp" width="2400" height="1103" loading="lazy"
+             alt="Task stages of round-doorknob opening and a real-world rollout with time-aligned fingertip grip force and knob torque.">
+        <figcaption>
+          <b>(a)</b> Reach, frictional multi-finger grasp, knob rotation until the latch releases, and push.
+          <b>(b)</b> A zero-shot real-world rollout with time-aligned fingertip grip force
+          (<span class="c-green">green</span>) and estimated knob torque (<span class="c-blue">blue</span>).
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- 2. Real-world experiments                                           -->
+  <!-- ================================================================ -->
+  <section class="section" id="experiments" data-play-in-view>
+    <div class="wrap">
+      <h2 class="section-title">Real-World Experiments</h2>
+      <p class="section-sub">Four commercial round doorknobs, like those in everyday homes, with no real-world fine-tuning.</p>
+      <p class="playback-note">
+        <svg width="18" height="18" aria-hidden="true"><use href="#i-sound"/></svg>
+        <span>All videos are <b>fully autonomous</b> and play at <b>1&times; speed</b>. They have <b>audio</b>:
+        unmute a clip to hear the <b>spring bounce</b> when it happens.</span>
+      </p>
+      <nav class="knob-picker" aria-label="Doorknobs">
+        <a class="knob-card" href="#doorknob-1">
+          <img src="static/knobs/doorknob_1.png" alt="" width="223" height="300" decoding="async">
+          <span class="knob-label">Doorknob #1</span>
+        </a>
+        <a class="knob-card" href="#doorknob-2">
+          <img src="static/knobs/doorknob_2.png" alt="" width="223" height="300" decoding="async">
+          <span class="knob-label">Doorknob #2</span>
+        </a>
+        <a class="knob-card" href="#doorknob-3">
+          <img src="static/knobs/doorknob_3.png" alt="" width="223" height="300" decoding="async">
+          <span class="knob-label">Doorknob #3</span>
+        </a>
+        <a class="knob-card" href="#doorknob-4">
+          <img src="static/knobs/doorknob_4.png" alt="" width="223" height="300" decoding="async">
+          <span class="knob-label">Doorknob #4</span>
+        </a>
+      </nav>
+      <p class="knob-hint">Select a doorknob to jump to its rollouts</p>
+    </div>
+    <div class="wrap wide">
+      <div class="knob-group" id="doorknob-1">
+        <h4 class="knob-title">Doorknob #1 <span>Tapered barrel with decreasing diameter</span></h4>
+        <div class="video-grid">
+          <figure class="vcard">
+            <img class="knob-views" src="static/knobs/doorknob_1_views.jpg" alt="Doorknob #1, front and top views" width="1280" height="720" loading="lazy">
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_1_rollout_1.jpg" data-src="videos/doorknob_1_rollouts/rollout_1.mp4"></video>
+              <span class="vtag">Rollout 1</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_1_rollout_2.jpg" data-src="videos/doorknob_1_rollouts/rollout_2.mp4"></video>
+              <span class="vtag">Rollout 2</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_1_rollout_3.jpg" data-src="videos/doorknob_1_rollouts/rollout_3.mp4"></video>
+              <span class="vtag">Rollout 3</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_1_rollout_4.jpg" data-src="videos/doorknob_1_rollouts/rollout_4.mp4"></video>
+              <span class="vtag">Rollout 4</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_1_rollout_5.jpg" data-src="videos/doorknob_1_rollouts/rollout_5.mp4"></video>
+              <span class="vtag">Rollout 5</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+        </div>
+      </div>
+      <div class="knob-group" id="doorknob-2">
+        <h4 class="knob-title">Doorknob #2 <span>Approximately spherical</span></h4>
+        <div class="video-grid">
+          <figure class="vcard">
+            <img class="knob-views" src="static/knobs/doorknob_2_views.jpg" alt="Doorknob #2, front and top views" width="1280" height="720" loading="lazy">
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_2_rollout_1.jpg" data-src="videos/doorknob_2_rollouts/rollout_1.mp4"></video>
+              <span class="vtag">Rollout 1</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_2_rollout_2.jpg" data-src="videos/doorknob_2_rollouts/rollout_2.mp4"></video>
+              <span class="vtag">Rollout 2</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_2_rollout_3.jpg" data-src="videos/doorknob_2_rollouts/rollout_3.mp4"></video>
+              <span class="vtag">Rollout 3</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_2_rollout_4.jpg" data-src="videos/doorknob_2_rollouts/rollout_4.mp4"></video>
+              <span class="vtag">Rollout 4</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_2_rollout_5.jpg" data-src="videos/doorknob_2_rollouts/rollout_5.mp4"></video>
+              <span class="vtag">Rollout 5</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+        </div>
+      </div>
+      <div class="knob-group" id="doorknob-3">
+        <h4 class="knob-title">Doorknob #3 <span>Axisymmetric disk with a rounded circumference</span></h4>
+        <div class="video-grid">
+          <figure class="vcard">
+            <img class="knob-views" src="static/knobs/doorknob_3_views.jpg" alt="Doorknob #3, front and top views" width="1280" height="720" loading="lazy">
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_3_rollout_1.jpg" data-src="videos/doorknob_3_rollouts/rollout_1.mp4"></video>
+              <span class="vtag">Rollout 1</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_3_rollout_2.jpg" data-src="videos/doorknob_3_rollouts/rollout_2.mp4"></video>
+              <span class="vtag">Rollout 2</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_3_rollout_3.jpg" data-src="videos/doorknob_3_rollouts/rollout_3.mp4"></video>
+              <span class="vtag">Rollout 3</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_3_rollout_4.jpg" data-src="videos/doorknob_3_rollouts/rollout_4.mp4"></video>
+              <span class="vtag">Rollout 4</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_3_rollout_5.jpg" data-src="videos/doorknob_3_rollouts/rollout_5.mp4"></video>
+              <span class="vtag">Rollout 5</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+        </div>
+      </div>
+      <div class="knob-group" id="doorknob-4">
+        <h4 class="knob-title">Doorknob #4 <span>Elongated, olive-shaped profile</span></h4>
+        <div class="video-grid">
+          <figure class="vcard">
+            <img class="knob-views" src="static/knobs/doorknob_4_views.jpg" alt="Doorknob #4, front and top views" width="1280" height="720" loading="lazy">
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_4_rollout_1.jpg" data-src="videos/doorknob_4_rollouts/rollout_1.mp4"></video>
+              <span class="vtag">Rollout 1</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_4_rollout_2.jpg" data-src="videos/doorknob_4_rollouts/rollout_2.mp4"></video>
+              <span class="vtag">Rollout 2</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_4_rollout_3.jpg" data-src="videos/doorknob_4_rollouts/rollout_3.mp4"></video>
+              <span class="vtag">Rollout 3</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_4_rollout_4.jpg" data-src="videos/doorknob_4_rollouts/rollout_4.mp4"></video>
+              <span class="vtag">Rollout 4</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_4_rollout_5.jpg" data-src="videos/doorknob_4_rollouts/rollout_5.mp4"></video>
+              <span class="vtag">Rollout 5</span><span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+            </div>
+          </figure>
+        </div>
+      </div>
+    </div>
+
+    <div class="wrap" id="recovery">
+      <h3 class="subsection-title">Recovery under disturbance</h3>
+      <p class="section-sub">Recovering and completing the task after slips and external disturbances.</p>
+      <div class="video-grid is-pair">
+        <figure class="vcard">
+          <div class="vframe">
+            <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/rollout_robustness.jpg" data-src="videos/more_details/rollout_robustness.mp4"></video>
+            <span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+          </div>
+          <figcaption class="vlabel">Robustness under disturbance</figcaption>
+        </figure>
+        <figure class="vcard">
+          <div class="vframe">
+            <!-- Same clip as Doorknob #4, Rollout 1. -->
+            <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/doorknob_4_rollout_1.jpg" data-src="videos/doorknob_4_rollouts/rollout_1.mp4"></video>
+            <span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+          </div>
+          <figcaption class="vlabel">Recovery from unexpected slips</figcaption>
+        </figure>
+      </div>
+    </div>
+
+    <div class="wrap" id="closer-view">
+      <h3 class="subsection-title">Closer view on knob rotation</h3>
+      <p class="section-sub">Hand-level views of the multi-finger grasp and the turn that releases the latch.</p>
+      <div class="video-grid is-pair">
+        <figure class="vcard">
+          <div class="vframe">
+            <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/closer_view_knob_1.jpg" data-src="videos/more_details/closer_view_knob_1.mp4"></video>
+            <span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+          </div>
+          <figcaption class="vlabel">Doorknob #1</figcaption>
+        </figure>
+        <figure class="vcard">
+          <div class="vframe">
+            <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/closer_view_knob_2.jpg" data-src="videos/more_details/closer_view_knob_2.mp4"></video>
+            <span class="vdone"><svg aria-hidden="true"><use href="#i-check"/></svg>Door opened</span>
+          </div>
+          <figcaption class="vlabel">Doorknob #2</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- 3. Baselines                                                       -->
+  <!-- ================================================================ -->
+  <section class="section" id="baselines">
+    <div class="wrap">
+      <h2 class="section-title">Baselines</h2>
+      <p class="section-sub">
+        10 real-world trials per knob for each method. The <b>reactive policy</b> uses binary fingertip contact
+        without adaptation; <b>RMA</b> adapts from proprioceptive history without touch.
+      </p>
+      <figure class="chart" id="results-chart">
+        <div class="chart-legend">
+          <span class="lg"><i class="sw sw-tma"></i>TMA<em>27/40 opened</em></span>
+          <span class="lg"><i class="sw sw-rma"></i>RMA<em>0/40 opened</em></span>
+          <span class="lg"><i class="sw sw-reactive"></i>Reactive policy<em>6/40 opened</em></span>
+        </div>
+        <p class="chart-key">
+          <span class="key-swatch"><i class="sw sw-tma"></i><i class="sw sw-tma-light"></i></span>
+          <span>Solid: door opened (<i>S</i>) &middot; light: grasped only &middot; full height: grasp success (<i>G</i>)</span>
+        </p>
+        <div class="chart-frame">
+          <span class="chart-ytitle">Trials (of 10)</span>
+          <div class="chart-plot">
+            <div class="gridline" style="bottom:0%"><span>0</span></div>
+            <div class="gridline" style="bottom:20%"><span>2</span></div>
+            <div class="gridline" style="bottom:40%"><span>4</span></div>
+            <div class="gridline" style="bottom:60%"><span>6</span></div>
+            <div class="gridline" style="bottom:80%"><span>8</span></div>
+            <div class="gridline" style="bottom:100%"><span>10</span></div>
+            <div class="chart-group">
+            <div class="bar bar-tma" tabindex="0" role="img" aria-label="Knob 1, TMA: 8 of 10 opened, 9 of 10 grasped" data-knob="Knob 1" data-method="TMA" data-s="8" data-g="9"><span class="seg seg-light" style="height:calc(10% - 2px)"></span><span class="seg seg-dark" style="height:80%"></span><span class="bar-label" style="bottom:calc(90% + 6px)">8/9</span></div>
+            <div class="bar bar-rma" tabindex="0" role="img" aria-label="Knob 1, RMA: 0 of 10 opened, 1 of 10 grasped" data-knob="Knob 1" data-method="RMA" data-s="0" data-g="1"><span class="seg seg-light" style="height:10%"></span></div>
+            <div class="bar bar-reactive" tabindex="0" role="img" aria-label="Knob 1, Reactive policy: 3 of 10 opened, 7 of 10 grasped" data-knob="Knob 1" data-method="Reactive policy" data-s="3" data-g="7"><span class="seg seg-light" style="height:calc(40% - 2px)"></span><span class="seg seg-dark" style="height:30%"></span></div>
+            </div>
+            <div class="chart-group">
+            <div class="bar bar-tma" tabindex="0" role="img" aria-label="Knob 2, TMA: 6 of 10 opened, 8 of 10 grasped" data-knob="Knob 2" data-method="TMA" data-s="6" data-g="8"><span class="seg seg-light" style="height:calc(20% - 2px)"></span><span class="seg seg-dark" style="height:60%"></span><span class="bar-label" style="bottom:calc(80% + 6px)">6/8</span></div>
+            <div class="bar bar-rma" tabindex="0" role="img" aria-label="Knob 2, RMA: 0 of 10 opened, 0 of 10 grasped" data-knob="Knob 2" data-method="RMA" data-s="0" data-g="0"></div>
+            <div class="bar bar-reactive" tabindex="0" role="img" aria-label="Knob 2, Reactive policy: 1 of 10 opened, 6 of 10 grasped" data-knob="Knob 2" data-method="Reactive policy" data-s="1" data-g="6"><span class="seg seg-light" style="height:calc(50% - 2px)"></span><span class="seg seg-dark" style="height:10%"></span></div>
+            </div>
+            <div class="chart-group">
+            <div class="bar bar-tma" tabindex="0" role="img" aria-label="Knob 3, TMA: 6 of 10 opened, 7 of 10 grasped" data-knob="Knob 3" data-method="TMA" data-s="6" data-g="7"><span class="seg seg-light" style="height:calc(10% - 2px)"></span><span class="seg seg-dark" style="height:60%"></span><span class="bar-label" style="bottom:calc(70% + 6px)">6/7</span></div>
+            <div class="bar bar-rma" tabindex="0" role="img" aria-label="Knob 3, RMA: 0 of 10 opened, 0 of 10 grasped" data-knob="Knob 3" data-method="RMA" data-s="0" data-g="0"></div>
+            <div class="bar bar-reactive" tabindex="0" role="img" aria-label="Knob 3, Reactive policy: 0 of 10 opened, 4 of 10 grasped" data-knob="Knob 3" data-method="Reactive policy" data-s="0" data-g="4"><span class="seg seg-light" style="height:40%"></span></div>
+            </div>
+            <div class="chart-group">
+            <div class="bar bar-tma" tabindex="0" role="img" aria-label="Knob 4, TMA: 7 of 10 opened, 8 of 10 grasped" data-knob="Knob 4" data-method="TMA" data-s="7" data-g="8"><span class="seg seg-light" style="height:calc(10% - 2px)"></span><span class="seg seg-dark" style="height:70%"></span><span class="bar-label" style="bottom:calc(80% + 6px)">7/8</span></div>
+            <div class="bar bar-rma" tabindex="0" role="img" aria-label="Knob 4, RMA: 0 of 10 opened, 0 of 10 grasped" data-knob="Knob 4" data-method="RMA" data-s="0" data-g="0"></div>
+            <div class="bar bar-reactive" tabindex="0" role="img" aria-label="Knob 4, Reactive policy: 2 of 10 opened, 6 of 10 grasped" data-knob="Knob 4" data-method="Reactive policy" data-s="2" data-g="6"><span class="seg seg-light" style="height:calc(40% - 2px)"></span><span class="seg seg-dark" style="height:20%"></span></div>
+            </div>
+          </div>
+          <div class="chart-xaxis">
+            <span>Knob 1</span>
+            <span>Knob 2</span>
+            <span>Knob 3</span>
+            <span>Knob 4</span>
+          </div>
+          <div class="chart-tooltip" role="status" hidden></div>
+        </div>
+        <details class="chart-table">
+          <summary>Show the numbers</summary>
+          <table>
+            <caption>Real-world door-open / grasp successes (<i>S</i> / <i>G</i>) out of 10 trials per knob</caption>
+            <thead><tr><th scope="col">Method</th><th scope="col">Knob 1</th><th scope="col">Knob 2</th><th scope="col">Knob 3</th><th scope="col">Knob 4</th><th scope="col">Total</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">TMA</th><td>8 / 9</td><td>6 / 8</td><td>6 / 7</td><td>7 / 8</td><td>27 / 32</td></tr>
+              <tr><th scope="row">RMA</th><td>0 / 1</td><td>0 / 0</td><td>0 / 0</td><td>0 / 0</td><td>0 / 1</td></tr>
+              <tr><th scope="row">Reactive policy</th><td>3 / 7</td><td>1 / 6</td><td>0 / 4</td><td>2 / 6</td><td>6 / 23</td></tr>
+            </tbody>
+          </table>
+        </details>
+      </figure>
+    </div>
+    <div class="wrap wide">
+      <p class="baseline-intro">
+        The reactive policy often grasps but cannot finish the turn; RMA fails to keep the grasp at all.
+      </p>
+      <div class="baseline-group" data-play-in-view>
+        <h4 class="baseline-title"><i class="sw sw-reactive"></i>Reactive policy</h4>
+        <div class="video-grid">
+          <figure class="vcard">
+            <div class="vframe" data-outcome="failed">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/reactive_1.jpg" data-src="videos/baselines/reactive_1.mp4"></video>
+              <span class="vtag">Reactive policy &middot; Trial 1</span><span class="vdone"><svg aria-hidden="true"><use href="#i-cross"/></svg>Failed</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe" data-outcome="failed">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/reactive_2.jpg" data-src="videos/baselines/reactive_2.mp4"></video>
+              <span class="vtag">Reactive policy &middot; Trial 2</span><span class="vdone"><svg aria-hidden="true"><use href="#i-cross"/></svg>Failed</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe" data-outcome="failed">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/reactive_3.jpg" data-src="videos/baselines/reactive_3.mp4"></video>
+              <span class="vtag">Reactive policy &middot; Trial 3</span><span class="vdone"><svg aria-hidden="true"><use href="#i-cross"/></svg>Failed</span>
+            </div>
+          </figure>
+        </div>
+      </div>
+      <div class="baseline-group" data-play-in-view>
+        <h4 class="baseline-title"><i class="sw sw-rma"></i>RMA</h4>
+        <div class="video-grid">
+          <figure class="vcard">
+            <div class="vframe" data-outcome="failed">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/rma_1.jpg" data-src="videos/baselines/rma_1.mp4"></video>
+              <span class="vtag">RMA &middot; Trial 1</span><span class="vdone"><svg aria-hidden="true"><use href="#i-cross"/></svg>Failed</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe" data-outcome="failed">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/rma_2.jpg" data-src="videos/baselines/rma_2.mp4"></video>
+              <span class="vtag">RMA &middot; Trial 2</span><span class="vdone"><svg aria-hidden="true"><use href="#i-cross"/></svg>Failed</span>
+            </div>
+          </figure>
+          <figure class="vcard">
+            <div class="vframe" data-outcome="failed">
+              <video class="lazy-video" muted playsinline controls preload="none" poster="static/posters/rma_3.jpg" data-src="videos/baselines/rma_3.mp4"></video>
+              <span class="vtag">RMA &middot; Trial 3</span><span class="vdone"><svg aria-hidden="true"><use href="#i-cross"/></svg>Failed</span>
+            </div>
+          </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- 4. Abstract                                                        -->
+  <!-- ================================================================ -->
+  <section class="section" id="abstract">
+    <div class="wrap">
+      <h2 class="section-title">Abstract</h2>
+      <p class="abstract-text">
+        Recent humanoid loco-manipulation in articulated environments has largely focused on geometry-dominant
+        interactions, where success is primarily determined by geometric alignment and motion execution. In
+        contrast, forceful multi-finger manipulation requires the robot to adapt to real-world uncertainties in
+        contact and interaction dynamics. We present <b>Tactile-Driven Motor Adaptation (TMA)</b> and an
+        integrated whole-body system for zero-shot sim-to-real forceful humanoid manipulation, and study
+        round-doorknob opening as a challenging benchmark requiring stable multi-finger frictional grasping,
+        sufficient torque generation without slip, force-regulated pushing, and whole-body stability. TMA
+        structures policy learning around interactions observable through tactile feedback, uses cone geometry
+        as an inductive bias for multi-finger contact representation, and adapts motor behavior online from
+        tactile history. An upper-body manipulation policy is trained alongside a pretrained general locomotion
+        controller to coordinate dexterous interaction and whole-body stabilization. Trained entirely in
+        simulation, TMA transfers zero-shot to a Unitree G1 humanoid with BrainCo Revo2 multi-fingered hands and
+        substantially outperforms standard Rapid Motor Adaptation (RMA) and reactive tactile policy baselines
+        across four commercial round doorknobs in the real world.
+      </p>
+    </div>
+    <div class="wrap wide">
+      <figure class="fig">
+        <img class="zoomable" src="static/figures/method_overview.webp" width="3200" height="901" loading="lazy"
+             alt="Overview of TMA: system overview, cone-coordinate tactile encoding, two-stage policy learning, and real-world deployment.">
+        <figcaption>
+          <b>Overview of Tactile-Driven Motor Adaptation.</b> (a) Whole-body system, (b) cone-coordinate tactile
+          encoding, (c) two-stage training of the oracle policy and adaptation encoder, (d) real-world deployment.
+        </figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- 5. Supplementary video (click to play; nothing loads until then)    -->
+  <!-- ================================================================ -->
+  <section class="section" id="video">
+    <div class="wrap">
+      <h2 class="section-title">Supplementary Video</h2>
+      <div class="supp-video">
+        <video controls playsinline preload="none" poster="static/posters/supplementary_video.jpg"
+               src="videos/supplementary_video.mp4?v=2" aria-label="Supplementary video (3 minutes)"></video>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================================================ -->
+  <!-- 6. BibTeX                                                          -->
+  <!-- ================================================================ -->
+  <section class="section" id="bibtex">
+    <div class="wrap">
+      <h2 class="section-title">BibTeX</h2>
+      <div class="cite">
+        <button class="copybtn" type="button" data-copy-target="bibtex-code">Copy</button>
+<pre><code id="bibtex-code">@article{chen2026tma,
+  title   = {{TMA}: Sim-to-Real Forceful Humanoid Manipulation via Tactile-Driven Motor Adaptation},
+  author  = {Chen, Yiting and Yu, Kelin and Kaingade, Sarthak and Trinh, Bryan and Hang, Kaiyu and
+             Mart{\'i}n-Mart{\'i}n, Roberto and Fazeli, Nima and Wu, X. Alice},
+  journal = {arXiv preprint arXiv:2611.18976},
+  year    = {2026}
+}</code></pre>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Figure lightbox. -->
+<dialog class="lightbox" id="lightbox" aria-label="Enlarged figure">
+  <button class="lightbox-close" type="button" aria-label="Close">&times;</button>
+  <img alt="">
+</dialog>
+
+</body>
+</html>
